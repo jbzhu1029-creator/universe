@@ -238,7 +238,18 @@ pub struct McpTransactionConfirmationPayload {
     /// Which caller asked for the transaction: `"app"` (in-app UI, tapplet bridge,
     /// anything reaching the Tauri command) or `"mcp"` (MCP transaction tool).
     pub origin: String,
+    /// Payment id the transaction will carry. For an L1 send this is the address's
+    /// embedded id when it has one, otherwise the caller's Message. Text is shown as
+    /// text; binary ids, or text with control or bidi characters, are `0x` hex.
     pub payment_id: Option<String>,
+    /// The destination address replaced the caller's Message with its own payment id.
+    pub payment_id_overridden: bool,
+
+    /// For an abandon: the user accepted that it has no change output to recognise it by.
+    pub accept_unreconcilable: bool,
+    /// For an abandon: it is a burn to L2.
+    pub is_burn: bool,
+
     pub fee_micro_minotari: Option<u64>,
 }
 
@@ -251,7 +262,11 @@ pub enum PinPromptContext {
     Send {
         amount_micro_minotari: u64,
         destination: String,
+        /// Payment id the send will carry: the address's embedded id when it has one,
+        /// otherwise the caller's Message. Text is shown as text; anything else is `0x` hex.
         payment_id: Option<String>,
+        /// The destination address replaced the caller's Message with its own payment id.
+        payment_id_overridden: bool,
         origin: String,
         fee_micro_minotari: Option<u64>,
     },
@@ -265,6 +280,9 @@ pub enum PinPromptContext {
     RestoreWalletDetails,
     /// The stored seed is PIN-protected although the config says no PIN is set.
     SeedNeedsPin,
+    /// One-time ask at startup: the Monero seed is still on the legacy PIN cipher and needs
+    /// the PIN to move to the current one.
+    SecurityUpgrade,
     /// Unlocking (or first enabling) the L2 wallet.
     L2Unlock,
     /// Revealing the L2 seed words.
@@ -290,6 +308,14 @@ pub enum PinPromptContext {
         amount_micro_minotari: u64,
         commitment: String,
         fee_micro_minotari: Option<u64>,
+    },
+    /// Abandoning stalled send or burn `tx_id`, which hands its inputs back.
+    Abandon {
+        amount_micro_minotari: u64,
+        tx_id: String,
+        /// The user accepted that it has no change output to recognise it by.
+        accept_unreconcilable: bool,
+        is_burn: bool,
     },
 }
 

@@ -1,6 +1,6 @@
 import { Button } from '@app/components/elements/buttons/Button';
 import TariPurpleLogo from './icons/TariPurpleLogo';
-import { Wrapper, WhiteBox, WhiteBoxLabel, WhiteBoxValue, Currency, Amount } from './styles';
+import { Wrapper, WhiteBox, WhiteBoxLabel, WhiteBoxValue, Currency, Amount, OverrideNotice } from './styles';
 import { useTranslation } from 'react-i18next';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 
@@ -17,6 +17,10 @@ interface Props {
     amount?: number;
     address: string;
     message?: string;
+    /** The destination address replaced `message`'s source with its own payment id. */
+    paymentIdOverridden?: boolean;
+    /** The send is recorded but the node hasn't accepted it yet; it is retried automatically. */
+    notAcceptedYet?: boolean;
     feeMicroMinotari?: number | null;
     handleClose: () => void;
 }
@@ -27,6 +31,8 @@ export function SendReview({
     amount,
     address,
     message,
+    paymentIdOverridden,
+    notAcceptedYet,
     feeMicroMinotari,
     handleClose,
 }: Props) {
@@ -38,6 +44,9 @@ export function SendReview({
         feeMicroMinotari != null
             ? `${formatNumber(feeMicroMinotari, FormatPreset.XTM_DECIMALS)} XTM`
             : t('send.fee-unavailable');
+    const overrideNotice = paymentIdOverridden ? (
+        <OverrideNotice data-testid="payment-id-overridden">{t('send.payment-id-overridden')}</OverrideNotice>
+    ) : null;
 
     const reviewEntries: StatusListEntry[] = [
         {
@@ -85,6 +94,7 @@ export function SendReview({
                     </WhiteBox>
 
                     <StatusList entries={reviewEntries} />
+                    {overrideNotice}
 
                     <Button type="submit" fluid size="xlarge" variant="green" data-testid="send-confirm-button">
                         {t('send.cta-confirm')}
@@ -106,11 +116,19 @@ export function SendReview({
                                 <strong>{`${formattedAmount} XTM`}</strong> {t('send.completed-amount-sent')}{' '}
                                 <strong>{formattedAddress}</strong>
                                 {`.`}
+                                {notAcceptedYet && (
+                                    <>
+                                        <br />
+                                        <br />
+                                        <span data-testid="send-not-accepted">{t('send.not-accepted-yet')}</span>
+                                    </>
+                                )}
                             </>
                         </StatusHero>
                     )}
 
                     <StatusList entries={statusEntries} />
+                    {overrideNotice}
 
                     {status === 'processing' && (
                         <Button type="button" fluid size="xlarge" variant="purple" disabled={true}>
